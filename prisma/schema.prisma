@@ -27,6 +27,7 @@ model Product {
   stock       Int      @default(0)
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id])
+  imageUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
