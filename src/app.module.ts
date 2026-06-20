@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { RolesGuard } from './auth/guards/roles/roles.guard';
 import { APP_GUARD } from '@nestjs/core/constants';
 import { JwtAuthGuard } from './auth/guards/jwt-auth/jwt-auth.guard';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth/jwt-auth.guard';
     ConfigModule.forRoot({ isGlobal: true }),
     UsersModule,
     AuthModule,
+    CartModule,
   ],
   controllers: [],
   providers: [
