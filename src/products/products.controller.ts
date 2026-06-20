@@ -18,26 +18,33 @@ import { CreateProductDto } from './dto/product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import 'multer';
+import { Public } from '../auth/decorators/public.decorator';
+import { Role } from '@prisma/client';
+import { Roles } from '../auth/decorators/role.decorator';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  @Public()
   @Get()
   getAllProducts() {
     return this.productsService.getAllProducts();
   }
 
+  @Public()
   @Get(':id')
   getProductById(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.getProductById(id);
   }
 
+  @Roles(Role.ADMIN)
   @Post()
   createProduct(@Body() createProductDto: CreateProductDto) {
     return this.productsService.createProduct(createProductDto);
   }
 
+  @Roles(Role.ADMIN)
   @Patch(':id/image')
   @UseInterceptors(FileInterceptor('file'))
   async uploadProductImage(
@@ -55,6 +62,7 @@ export class ProductsController {
     return this.productsService.uploadProductImage(id, file);
   }
 
+  @Roles(Role.ADMIN)
   @Patch(':id')
   updateProduct(
     @Param('id', ParseIntPipe) id: number,
@@ -63,6 +71,7 @@ export class ProductsController {
     return this.productsService.updateProduct(id, updateProductDto);
   }
 
+  @Roles(Role.ADMIN)
   @Delete(':id')
   deleteProduct(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.deleteProduct(id);
