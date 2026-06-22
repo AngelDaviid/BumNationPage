@@ -33,6 +33,13 @@ export class CreateUserDto {
   email!: string;
 
   @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d{7,15}$/, {
+    message: 'El teléfono debe contener solo números (7-15 dígitos)',
+  })
+  phone!: string;
+
+  @IsString()
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   password!: string;
 }

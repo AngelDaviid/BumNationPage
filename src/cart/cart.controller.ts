@@ -48,7 +48,7 @@ export class CartController {
   removeItem(@CurrentUser() user, @Param('id', ParseUUIDPipe) itemId: string) {
     return this.cartService.removeItem(user.id, itemId);
   }
-  
+
   @Delete()
   clearCart(@CurrentUser() user) {
     return this.cartService.clearCart(user.id);

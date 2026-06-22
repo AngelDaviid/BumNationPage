@@ -19,7 +19,9 @@ enum Role {
 }
 
 enum OrderStatus {
-  PENDING
+  PENDING_CONFIRMATION
+  CONFIRMED
+  AWAITING_PAYMENT
   PAID
   SHIPPED
   DELIVERED
@@ -55,6 +57,7 @@ model User {
   firstLastName   String
   secondLastName  String?
   email           String         @unique
+  phone           String?
   password        String
   imageUrl        String?
   role            Role           @default(CLIENT)
@@ -78,11 +81,13 @@ model GymMembership {
 
 model Order {
   id          String      @id @default(uuid())
+  orderNumber Int         @unique @default(autoincrement())
   userId      String
   user        User        @relation(fields: [userId], references: [id])
   items       OrderItem[]
-  status      OrderStatus @default(PENDING)
+  status      OrderStatus @default(PENDING_CONFIRMATION)
   total       Decimal     @db.Decimal(10, 2)
+  cancelReason String? 
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
