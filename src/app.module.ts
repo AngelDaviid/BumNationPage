@@ -8,6 +8,11 @@ import { AuthModule } from './auth/auth.module';
 import { RolesGuard } from './auth/guards/roles/roles.guard';
 import { APP_GUARD } from '@nestjs/core/constants';
 import { JwtAuthGuard } from './auth/guards/jwt-auth/jwt-auth.guard';
+import { CartModule } from './cart/cart.module';
+import { OrdersService } from './orders/orders.service';
+import { OrdersController } from './orders/orders.controller';
+import { OrdersModule } from './orders/orders.module';
+import { GymMembershipModule } from './gym-membership/gym-membership.module';
 
 @Module({
   imports: [
@@ -17,8 +22,11 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth/jwt-auth.guard';
     ConfigModule.forRoot({ isGlobal: true }),
     UsersModule,
     AuthModule,
+    CartModule,
+    OrdersModule,
+    GymMembershipModule,
   ],
-  controllers: [],
+  controllers: [OrdersController],
   providers: [
     {
       provide: APP_GUARD,
@@ -28,6 +36,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth/jwt-auth.guard';
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
+    OrdersService,
   ],
 })
 export class AppModule {}
