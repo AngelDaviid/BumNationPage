@@ -28,6 +28,13 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+}
+
 model Category {
   id       Int       @id @default(autoincrement())
   name     String    @unique
@@ -35,76 +42,88 @@ model Category {
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
   description String?
-  price       Decimal  @db.Decimal(10, 2)
-  stock       Int      @default(0)
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int         @default(0)
   categoryId  Int
-  category    Category @relation(fields: [categoryId], references: [id])
+  category    Category    @relation(fields: [categoryId], references: [id])
   imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
   cartItems   CartItem[]
 }
 
 model User {
-  id              String         @id @default(uuid())
-  identification  String         @unique
-  firstName       String
-  middleName      String?
-  firstLastName   String
-  secondLastName  String?
-  email           String         @unique
-  phone           String?
-  password        String
-  imageUrl        String?
-  role            Role           @default(CLIENT)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  orders          Order[]
-  gymMembership   GymMembership? 
-  cart            Cart?
+  id             String         @id @default(uuid())
+  identification String         @unique
+  firstName      String
+  middleName     String?
+  firstLastName  String
+  secondLastName String?
+  email          String         @unique
+  phone          String?
+  password       String
+  imageUrl       String?
+  role           Role           @default(CLIENT)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  orders         Order[]
+  gymMembership  GymMembership?
+  cart           Cart?
 }
 
 model GymMembership {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id])
-  startDate       DateTime 
-  nextPaymentDate DateTime 
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 String              @id @default(uuid())
+  userId             String              @unique
+  user               User                @relation(fields: [userId], references: [id])
+  startDate          DateTime
+  nextPaymentDate    DateTime
+  status             MembershipStatus    @default(ACTIVE)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  membershipPayments MembershipPayment[]
+}
+
+model MembershipPayment {
+  id           String        @id @default(uuid())
+  membershipId String
+  membership   GymMembership @relation(fields: [membershipId], references: [id])
+  amount       Decimal       @db.Decimal(10, 2)
+  paidAt       DateTime      @default(now())
+  notes        String?
+  validFrom    DateTime
+  validUntil   DateTime
 }
 
 model Order {
-  id          String      @id @default(uuid())
-  orderNumber Int         @unique @default(autoincrement())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
-  items       OrderItem[]
-  status      OrderStatus @default(PENDING_CONFIRMATION)
-  total       Decimal     @db.Decimal(10, 2)
-  cancelReason String? 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id           String      @id @default(uuid())
+  orderNumber  Int         @unique @default(autoincrement())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  items        OrderItem[]
+  status       OrderStatus @default(PENDING_CONFIRMATION)
+  total        Decimal     @db.Decimal(10, 2)
+  cancelReason String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model OrderItem {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   orderId     String
-  order       Order    @relation(fields: [orderId], references: [id])
+  order       Order   @relation(fields: [orderId], references: [id])
   productId   Int
-  product     Product  @relation(fields: [productId], references: [id])
+  product     Product @relation(fields: [productId], references: [id])
   quantity    Int
-  priceAtTime Decimal  @db.Decimal(10, 2) 
+  priceAtTime Decimal @db.Decimal(10, 2)
 }
 
 model Cart {
   id        String     @id @default(uuid())
-  userId    String     @unique 
+  userId    String     @unique
   user      User       @relation(fields: [userId], references: [id])
   items     CartItem[]
   createdAt DateTime   @default(now())
@@ -112,11 +131,11 @@ model Cart {
 }
 
 model CartItem {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   cartId    String
-  cart      Cart     @relation(fields: [cartId], references: [id])
+  cart      Cart    @relation(fields: [cartId], references: [id])
   productId Int
-  product   Product  @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
   quantity  Int
 
   @@unique([cartId, productId])
