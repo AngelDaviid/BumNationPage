@@ -12,6 +12,7 @@ import { CartModule } from './cart/cart.module';
 import { OrdersService } from './orders/orders.service';
 import { OrdersController } from './orders/orders.controller';
 import { OrdersModule } from './orders/orders.module';
+import { GymMembershipModule } from './gym-membership/gym-membership.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { OrdersModule } from './orders/orders.module';
     AuthModule,
     CartModule,
     OrdersModule,
+    GymMembershipModule,
   ],
   controllers: [OrdersController],
   providers: [
