@@ -13,13 +13,20 @@ import { OrdersService } from './orders/orders.service';
 import { OrdersController } from './orders/orders.controller';
 import { OrdersModule } from './orders/orders.module';
 import { GymMembershipModule } from './gym-membership/gym-membership.module';
+import { envValidationSchema } from './config/env.config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: envValidationSchema,
+      validationOptions: {
+        abortEarly: false,
+      },
+    }),
     ProductsModule,
     CategoryModule,
     PrismaModule,
-    ConfigModule.forRoot({ isGlobal: true }),
     UsersModule,
     AuthModule,
     CartModule,
