@@ -10,6 +10,8 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import 'multer';
 import { Prisma } from '@prisma/client';
+import { PaginationDto } from '../common/dto/pagination.dto';
+import { paginate } from '../common/helpers/pagination.helper';
 
 @Injectable()
 export class ProductsService {
@@ -18,8 +20,21 @@ export class ProductsService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async getAllProducts() {
-    return this.prismaService.product.findMany();
+  async getAllProducts(paginationDto: PaginationDto) {
+    const { limit = 10, page = 1 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await this.prismaService.$transaction([
+      this.prismaService.product.findMany({
+        skip,
+        take: limit,
+        include: { category: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prismaService.product.count(),
+    ]);
+
+    return paginate(products, total, page, limit);
   }
 
   async getProductById(id: number) {

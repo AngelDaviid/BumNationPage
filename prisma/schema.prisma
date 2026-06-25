@@ -48,6 +48,7 @@ model Product {
   price       Decimal     @db.Decimal(10, 2)
   stock       Int         @default(0)
   categoryId  Int
+  brand       String?
   category    Category    @relation(fields: [categoryId], references: [id])
   imageUrl    String?
   createdAt   DateTime    @default(now())
