@@ -18,6 +18,10 @@ export class CreateProductDto {
   @IsNumber()
   stock!: number;
 
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
   @Type(() => Number)
   @IsNumber()
   categoryId!: number;
