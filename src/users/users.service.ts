@@ -10,6 +10,8 @@ import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { PaginationDto } from '../common/dto/pagination.dto';
+import { paginate } from '../common/helpers/pagination.helper';
 
 @Injectable()
 export class UsersService {
@@ -24,10 +26,19 @@ export class UsersService {
     });
   }
 
-  async getAllUsers() {
-    return await this.prismaService.user.findMany({
-      omit: { password: true },
-    });
+  async getAllUsers(paginationDto: PaginationDto) {
+    const { limit = 10, page = 1 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await this.prismaService.$transaction([
+      this.prismaService.user.findMany({
+        omit: { password: true },
+        skip,
+        take: limit,
+      }),
+      this.prismaService.user.count(),
+    ]);
+    return paginate(users, total, page, limit);
   }
 
   async getUserById(id: string) {

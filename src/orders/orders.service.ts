@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus } from '@prisma/client';
+import { PaginationDto } from '../common/dto/pagination.dto';
+import { paginate } from '../common/helpers/pagination.helper';
 
 @Injectable()
 export class OrdersService {
@@ -67,12 +69,21 @@ export class OrdersService {
     return order;
   }
 
-  async getMyOrders(userId: string) {
-    return this.prismaService.order.findMany({
-      where: { userId },
-      include: { items: { include: { product: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getMyOrders(userId: string, paginationDto: PaginationDto) {
+    const { limit = 10, page = 1 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [orders, total] = await this.prismaService.$transaction([
+      this.prismaService.order.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        include: { items: { include: { product: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prismaService.order.count(),
+    ]);
+    return paginate(orders, total, page, limit);
   }
 
   async getOrderById(userId: string, orderId: string, isAdmin: boolean) {
@@ -92,21 +103,31 @@ export class OrdersService {
     return order;
   }
 
-  async getAllOrders() {
-    return this.prismaService.order.findMany({
-      include: {
-        items: { include: { product: true } },
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            firstLastName: true,
-            email: true,
-            phone: true,
+  async getAllOrders(paginationDto: PaginationDto) {
+    const { limit = 10, page = 1 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [orders, total] = await this.prismaService.$transaction([
+      this.prismaService.order.findMany({
+        skip,
+        take: limit,
+        include: {
+          items: { include: { product: true } },
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              firstLastName: true,
+              email: true,
+              phone: true,
+            },
           },
         },
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prismaService.order.count(),
+    ]);
+    return paginate(orders, total, page, limit);
   }
 
   async getOrderByNumber(orderNumber: number) {
