@@ -26,6 +26,26 @@ export class ProductsService {
 
     const [products, total] = await this.prismaService.$transaction([
       this.prismaService.product.findMany({
+        where: { isActive: true },
+        skip,
+        take: limit,
+        include: { category: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prismaService.product.count({
+        where: { isActive: true },
+      }),
+    ]);
+
+    return paginate(products, total, page, limit);
+  }
+
+  async getAllProductsAdmin(paginationDto: PaginationDto) {
+    const { limit = 10, page = 1 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await this.prismaService.$transaction([
+      this.prismaService.product.findMany({
         skip,
         take: limit,
         include: { category: true },
@@ -38,9 +58,10 @@ export class ProductsService {
   }
 
   async getProductById(id: number) {
-    const product = await this.prismaService.product.findUnique({
+    const product = await this.prismaService.product.findFirst({
       where: {
         id,
+        isActive: true,
       },
     });
     if (!product) {
@@ -102,8 +123,31 @@ export class ProductsService {
   async deleteProduct(id: number) {
     await this.getProductById(id);
 
-    return this.prismaService.product.delete({
+    return this.prismaService.product.update({
       where: { id },
+      data: { deletedAt: new Date(), isActive: false },
+    });
+  }
+
+  async restoreProduct(id: number) {
+    const product = await this.prismaService.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (product.isActive) {
+      throw new BadRequestException('El producto ya está activo');
+    }
+
+    return this.prismaService.product.update({
+      where: { id },
+      data: {
+        isActive: true,
+        deletedAt: null,
+      },
     });
   }
 }

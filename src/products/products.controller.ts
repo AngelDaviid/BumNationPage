@@ -34,6 +34,12 @@ export class ProductsController {
     return this.productsService.getAllProducts(paginationDto);
   }
 
+  @Roles(Role.ADMIN)
+  @Get('admin')
+  getAllProductsAdmin(@Query() paginationDto: PaginationDto) {
+    return this.productsService.getAllProductsAdmin(paginationDto);
+  }
+
   @Public()
   @Get(':id')
   getProductById(@Param('id', ParseIntPipe) id: number) {
@@ -77,5 +83,11 @@ export class ProductsController {
   @Delete(':id')
   deleteProduct(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.deleteProduct(id);
+  }
+
+  @Roles(Role.ADMIN)
+  @Patch(':id/restore')
+  restoreProduct(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.restoreProduct(id);
   }
 }

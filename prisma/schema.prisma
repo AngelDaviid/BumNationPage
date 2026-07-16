@@ -55,6 +55,8 @@ model Product {
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
   cartItems   CartItem[]
+  isActive    Boolean     @default(true)
+  deletedAt   DateTime?
 }
 
 model User {
