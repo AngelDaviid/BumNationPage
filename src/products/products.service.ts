@@ -21,12 +21,23 @@ export class ProductsService {
   ) {}
 
   async getAllProducts(paginationDto: PaginationDto) {
-    const { limit = 10, page = 1 } = paginationDto;
+    const { limit = 10, page = 1, search } = paginationDto;
     const skip = (page - 1) * limit;
+
+    const where: Prisma.ProductWhereInput = {
+      isActive: true,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { brand: { contains: search, mode: 'insensitive' } },
+          { category: { name: { contains: search, mode: 'insensitive' } } },
+        ],
+      }),
+    };
 
     const [products, total] = await this.prismaService.$transaction([
       this.prismaService.product.findMany({
-        where: { isActive: true },
+        where,
         skip,
         take: limit,
         include: { category: true },
