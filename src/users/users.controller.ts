@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -23,6 +24,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { Roles } from '../auth/decorators/role.decorator';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -31,8 +33,8 @@ export class UsersController {
 
   @Roles(Role.ADMIN)
   @Get()
-  async getAllUsers() {
-    return await this.userService.getAllUsers();
+  async getAllUsers(@Query() paginationDto: PaginationDto) {
+    return await this.userService.getAllUsers(paginationDto);
   }
 
   @Roles(Role.ADMIN)

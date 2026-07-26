@@ -12,6 +12,7 @@ import { CartService } from './cart.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AddToCartDto } from './dtos/add-to-cart.dto';
 import { UpdateCartItemDto } from './dtos/update-cart-item.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('cart')
 export class CartController {

@@ -34,7 +34,7 @@ export class CartService {
       where: { id: productId },
     });
 
-    if (!product) {
+    if (!product || !product.isActive) {
       throw new NotFoundException('Producto no encontrado');
     }
 

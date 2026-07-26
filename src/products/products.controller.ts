@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -21,6 +22,7 @@ import 'multer';
 import { Public } from '../auth/decorators/public.decorator';
 import { Role } from '@prisma/client';
 import { Roles } from '../auth/decorators/role.decorator';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -28,8 +30,14 @@ export class ProductsController {
 
   @Public()
   @Get()
-  getAllProducts() {
-    return this.productsService.getAllProducts();
+  getAllProducts(@Query() paginationDto: PaginationDto) {
+    return this.productsService.getAllProducts(paginationDto);
+  }
+
+  @Roles(Role.ADMIN)
+  @Get('admin')
+  getAllProductsAdmin(@Query() paginationDto: PaginationDto) {
+    return this.productsService.getAllProductsAdmin(paginationDto);
   }
 
   @Public()
@@ -75,5 +83,11 @@ export class ProductsController {
   @Delete(':id')
   deleteProduct(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.deleteProduct(id);
+  }
+
+  @Roles(Role.ADMIN)
+  @Patch(':id/restore')
+  restoreProduct(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.restoreProduct(id);
   }
 }

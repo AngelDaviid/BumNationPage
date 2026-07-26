@@ -1,28 +1,45 @@
-import { Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Trim, Sanitize, Escape } from 'class-sanitizer';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsInt,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreateProductDto {
+  @Trim()
+  @Sanitize(Escape)
   @IsString()
   @IsNotEmpty()
   name!: string;
 
+  @Trim()
+  @Sanitize(Escape)
   @IsOptional()
   @IsString()
   description?: string;
 
-  @Type(() => Number)
   @IsNumber()
+  @IsPositive()
   price!: number;
 
-  @Type(() => Number)
-  @IsNumber()
+  @IsInt()
+  @IsPositive()
   stock!: number;
 
-  @Type(() => Number)
-  @IsNumber()
+  @IsOptional()
+  @Trim()
+  @Sanitize(Escape)
+  @IsString()
+  brand?: string;
+
+  @IsInt()
+  @IsPositive()
   categoryId!: number;
 
-  @IsString()
-  @IsOptional()
-  imageUrl?: string;
+  @IsBoolean()
+  isActive!: boolean;
 }

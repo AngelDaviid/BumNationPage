@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -14,6 +15,7 @@ import { Role } from '@prisma/client';
 import { Roles } from '../auth/decorators/role.decorator';
 import { UpdateOrderStatusDto } from './dtos/update-order-status.dto';
 import { CancelOrderDto } from './dtos/cancel-order.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -25,8 +27,11 @@ export class OrdersController {
   }
 
   @Get('me')
-  async getMyOrders(@CurrentUser() user) {
-    return this.ordersService.getMyOrders(user.id);
+  async getMyOrders(
+    @CurrentUser() user,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.ordersService.getMyOrders(user.id, paginationDto);
   }
 
   @Get(':id')
@@ -40,8 +45,8 @@ export class OrdersController {
 
   @Roles(Role.ADMIN)
   @Get()
-  getAllOrders() {
-    return this.ordersService.getAllOrders();
+  getAllOrders(@Query() paginationDto: PaginationDto) {
+    return this.ordersService.getAllOrders(paginationDto);
   }
 
   @Roles(Role.ADMIN)
