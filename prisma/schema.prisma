@@ -85,6 +85,7 @@ model GymMembership {
   startDate          DateTime
   nextPaymentDate    DateTime
   status             MembershipStatus    @default(ACTIVE)
+  expiredAt          DateTime? 
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   membershipPayments MembershipPayment[]
