@@ -15,9 +15,11 @@ import { OrdersModule } from './orders/orders.module';
 import { GymMembershipModule } from './gym-membership/gym-membership.module';
 import { envValidationSchema } from './config/env.config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: envValidationSchema,
