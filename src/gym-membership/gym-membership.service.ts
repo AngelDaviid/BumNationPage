@@ -7,35 +7,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateMembershipDto } from './dtos/create-membership.dto';
 import { RenewMembershipDto } from './dtos/renew-membership.dto';
 import { UpdateMembershipStatusDto } from './dtos/update-membership-status.dto';
+import { calculateMembershipStats } from '../common/utils/membership-stats.util';
+import { MembershipStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class GymMembershipService {
   constructor(private readonly prismaService: PrismaService) {}
-
-  private calculateMembershipStats(membership: {
-    startDate: Date;
-    nextPaymentDate: Date;
-    status: string;
-  }) {
-    const today = new Date();
-
-    const daysAsMember = Math.floor(
-      (today.getTime() - membership.startDate.getTime()) /
-        (1000 * 60 * 60 * 24),
-    );
-
-    const daysUntilExpire = Math.floor(
-      (membership.nextPaymentDate.getTime() - today.getTime()) /
-        (1000 * 60 * 60 * 24),
-    );
-
-    return {
-      daysAsMember,
-      daysUntilExpire: Math.max(0, daysUntilExpire),
-      isAboutToExpire: daysUntilExpire <= 7 && daysUntilExpire >= 0,
-      isExpired: daysUntilExpire < 0,
-    };
-  }
 
   async createMembership(
     userId: string,
@@ -132,6 +109,9 @@ export class GymMembershipService {
   ) {
     const membership = await this.prismaService.gymMembership.findUnique({
       where: { userId },
+      include: {
+        membershipPayments: { select: { validFrom: true, validUntil: true } },
+      },
     });
 
     if (!membership) {
@@ -144,9 +124,21 @@ export class GymMembershipService {
       );
     }
 
+    const data: Prisma.GymMembershipUpdateInput = {
+      status: updateMembershipDto.status,
+    };
+
+    if (updateMembershipDto.status === MembershipStatus.EXPIRED) {
+      data.expiredAt = membership.expiredAt ?? new Date();
+    }
+
+    if (updateMembershipDto.status === MembershipStatus.ACTIVE) {
+      data.expiredAt = null;
+    }
+
     return this.prismaService.gymMembership.update({
       where: { userId },
-      data: { status: updateMembershipDto.status },
+      data,
     });
   }
 
@@ -168,7 +160,7 @@ export class GymMembershipService {
 
     return memberships.map((m) => ({
       ...m,
-      ...this.calculateMembershipStats(m),
+      ...calculateMembershipStats(m),
     }));
   }
 
@@ -194,7 +186,7 @@ export class GymMembershipService {
 
     return {
       ...membership,
-      ...this.calculateMembershipStats(membership),
+      ...calculateMembershipStats(membership),
     };
   }
 
@@ -212,7 +204,7 @@ export class GymMembershipService {
 
     return {
       ...membership,
-      ...this.calculateMembershipStats(membership),
+      ...calculateMembershipStats(membership),
     };
   }
 
