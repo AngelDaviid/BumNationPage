@@ -42,6 +42,12 @@ export class UsersController {
     return this.userService.updateUser(user.id, dto);
   }
 
+  @Roles(Role.ADMIN)
+  @Get('stats')
+  async getStats() {
+    return this.userService.getUsersStats();
+  }
+
   @Patch('me/image')
   @UseInterceptors(FileInterceptor('file'))
   uploadMyImage(
@@ -111,5 +117,4 @@ export class UsersController {
 
     return { message: 'Usuario eliminado exitosamente' };
   }
-
 }
