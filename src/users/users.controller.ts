@@ -25,11 +25,45 @@ import { Roles } from '../auth/decorators/role.decorator';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { UpdateUserAdminDto } from './dto/update-user-dto-admin';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
+
+  @Get('me')
+  getMyProfile(@CurrentUser() user) {
+    return this.userService.getUserById(user.id);
+  }
+
+  @Patch('me')
+  updateMyProfile(@CurrentUser() user, @Body() dto: UpdateUserDto) {
+    return this.userService.updateUser(user.id, dto);
+  }
+
+  @Roles(Role.ADMIN)
+  @Get('stats')
+  async getStats() {
+    return this.userService.getUsersStats();
+  }
+
+  @Patch('me/image')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadMyImage(
+    @CurrentUser() user,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.userService.uploadUserImage(user.id, file);
+  }
 
   @Roles(Role.ADMIN)
   @Get()
@@ -71,7 +105,7 @@ export class UsersController {
   @Patch(':id')
   async updateUser(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateUserDto: UpdateUserDto,
+    @Body() updateUserDto: UpdateUserAdminDto,
   ) {
     return await this.userService.updateUser(id, updateUserDto);
   }
@@ -82,32 +116,5 @@ export class UsersController {
     await this.userService.deleteUser(id);
 
     return { message: 'Usuario eliminado exitosamente' };
-  }
-
-  @Get('me')
-  getMyProfile(@CurrentUser() user) {
-    return this.userService.getUserById(user.id);
-  }
-
-  @Patch('me')
-  updateMyProfile(@CurrentUser() user, @Body() dto: UpdateUserDto) {
-    return this.userService.updateUser(user.id, dto);
-  }
-
-  @Patch('me/image')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadMyImage(
-    @CurrentUser() user,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
-  ) {
-    return this.userService.uploadUserImage(user.id, file);
   }
 }

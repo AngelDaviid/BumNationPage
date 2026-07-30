@@ -27,6 +27,25 @@ export class UsersService {
     });
   }
 
+  async getUsersStats() {
+    const [totalUsers, activeMembers] = await Promise.all([
+      this.prismaService.user.count(),
+      this.prismaService.user.count({
+        where: {
+          gymMembership: {
+            status: 'ACTIVE',
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total: totalUsers,
+      active: activeMembers,
+      withoutMembership: totalUsers - activeMembers,
+    };
+  }
+
   async getAllUsers(paginationDto: PaginationDto) {
     const { limit = 10, page = 1, search } = paginationDto;
     const skip = (page - 1) * limit;
@@ -114,6 +133,7 @@ export class UsersService {
       return await this.prismaService.user.update({
         where: { id },
         data: updateUserDto,
+        omit: { password: true },
       });
     } catch (error) {
       if (
