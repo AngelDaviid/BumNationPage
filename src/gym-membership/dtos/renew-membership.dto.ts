@@ -12,12 +12,6 @@ export class RenewMembershipDto {
   @IsPositive()
   amount!: number;
 
-  @IsDateString()
-  validFrom!: string;
-
-  @IsDateString()
-  validUntil!: string;
-
   @Trim()
   @Sanitize(Escape)
   @IsOptional()

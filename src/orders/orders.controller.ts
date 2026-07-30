@@ -77,7 +77,6 @@ export class OrdersController {
     return this.ordersService.updateStatus(id, updateStatusDto.status);
   }
 
-
   @Roles(Role.ADMIN)
   @Patch(':id/admin-cancel')
   cancelOrderAsAdmin(
