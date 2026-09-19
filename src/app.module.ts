@@ -14,6 +14,7 @@ import { OrdersController } from './orders/orders.controller';
 import { OrdersModule } from './orders/orders.module';
 import { GymMembershipModule } from './gym-membership/gym-membership.module';
 import { envValidationSchema } from './config/env.config';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { envValidationSchema } from './config/env.config';
     CartModule,
     OrdersModule,
     GymMembershipModule,
+    FavoritesModule,
   ],
   controllers: [OrdersController],
   providers: [
