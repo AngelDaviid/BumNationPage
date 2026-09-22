@@ -32,22 +32,50 @@ export class GymMembershipService {
         where: { userId },
       });
 
-    if (existingMembership) {
-      throw new BadRequestException(`El usuario ya tiene una membresía activa`);
+    if (
+      existingMembership &&
+      existingMembership.status !== MembershipStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        existingMembership.status === MembershipStatus.ACTIVE
+          ? 'El usuario ya tiene una membresía activa'
+          : 'El usuario tiene una membresía expirada, debe renovarla',
+      );
     }
 
     const { startDate, initialPayment } = createMembershipDto;
     const parsedStartDate = new Date(startDate);
     const validUntil = addOneMonth(parsedStartDate);
+    const include = {
+      user: {
+        select: {
+          firstName: true,
+          firstLastName: true,
+          email: true,
+          phone: true,
+        },
+      },
+      membershipPayment: { orderBy: { paidAt: 'desc' as const } },
+    };
 
     return this.prismaService.$transaction(async (tx) => {
-      const membership = await tx.gymMembership.create({
-        data: {
-          userId,
-          startDate: parsedStartDate,
-          nextPaymentDate: validUntil,
-        },
-      });
+      const membership = existingMembership
+        ? await tx.gymMembership.update({
+            where: { userId },
+            data: {
+              startDate: parsedStartDate,
+              nextPaymentDate: validUntil,
+              status: MembershipStatus.ACTIVE,
+              expiredAt: null,
+            },
+          })
+        : await tx.gymMembership.create({
+            data: {
+              userId,
+              startDate: parsedStartDate,
+              nextPaymentDate: validUntil,
+            },
+          });
 
       await tx.membershipPayment.create({
         data: {
@@ -61,17 +89,7 @@ export class GymMembershipService {
 
       return tx.gymMembership.findUnique({
         where: { id: membership.id },
-        include: {
-          user: {
-            select: {
-              firstName: true,
-              firstLastName: true,
-              email: true,
-              phone: true,
-            },
-          },
-          membershipPayments: { orderBy: { paidAt: 'desc' } },
-        },
+        include,
       });
     });
   }
@@ -81,7 +99,7 @@ export class GymMembershipService {
     renewMembershipDto: RenewMembershipDto,
   ) {
     const membership = await this.prismaService.gymMembership.findUnique({
-      where: { id: userId },
+      where: { userId },
     });
 
     if (!membership) {
@@ -94,11 +112,13 @@ export class GymMembershipService {
       );
     }
 
-    const validFrom = new Date();
+    const now = new Date();
+    const validFrom =
+      membership.nextPaymentDate > now ? membership.nextPaymentDate : now;
     const validUntil = addOneMonth(validFrom);
 
     return this.prismaService.$transaction(async (tx) => {
-      await this.prismaService.membershipPayment.create({
+      await tx.membershipPayment.create({
         data: {
           membershipId: membership.id,
           amount: renewMembershipDto.amount,
@@ -113,6 +133,7 @@ export class GymMembershipService {
         data: {
           nextPaymentDate: validUntil,
           status: 'ACTIVE',
+          expiredAt: null,
         },
         include: {
           membershipPayments: { orderBy: { paidAt: 'desc' } },
@@ -135,9 +156,6 @@ export class GymMembershipService {
   ) {
     const membership = await this.prismaService.gymMembership.findUnique({
       where: { userId },
-      include: {
-        membershipPayments: { select: { validFrom: true, validUntil: true } },
-      },
     });
 
     if (!membership) {
