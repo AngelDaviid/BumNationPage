@@ -1,3 +1,4 @@
+import { Trim, Sanitize, Escape } from 'class-sanitizer';
 import {
   IsDateString,
   IsNumber,
@@ -11,12 +12,8 @@ export class RenewMembershipDto {
   @IsPositive()
   amount!: number;
 
-  @IsDateString()
-  validFrom!: string;
-
-  @IsDateString()
-  validUntil!: string;
-
+  @Trim()
+  @Sanitize(Escape)
   @IsOptional()
   @IsString()
   notes?: string;

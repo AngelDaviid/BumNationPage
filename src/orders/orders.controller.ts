@@ -43,6 +43,19 @@ export class OrdersController {
     );
   }
 
+  @Patch(':id/cancel')
+  cancelMyOrder(
+    @CurrentUser() user,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() cancelOrderDto: CancelOrderDto,
+  ) {
+    return this.ordersService.cancelMyOrder(
+      user.id,
+      id,
+      cancelOrderDto.cancelReason,
+    );
+  }
+
   @Roles(Role.ADMIN)
   @Get()
   getAllOrders(@Query() paginationDto: PaginationDto) {
@@ -62,19 +75,6 @@ export class OrdersController {
     @Body() updateStatusDto: UpdateOrderStatusDto,
   ) {
     return this.ordersService.updateStatus(id, updateStatusDto.status);
-  }
-
-  @Patch(':id/cancel')
-  cancelMyOrder(
-    @CurrentUser() user,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() cancelOrderDto: CancelOrderDto,
-  ) {
-    return this.ordersService.cancelMyOrder(
-      user.id,
-      id,
-      cancelOrderDto.cancelReason,
-    );
   }
 
   @Roles(Role.ADMIN)

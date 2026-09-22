@@ -6,12 +6,13 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate } from '../common/helpers/pagination.helper';
+import { calculateMembershipStats } from '../common/utils/membership-stats.util';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -26,19 +27,58 @@ export class UsersService {
     });
   }
 
+  async getUsersStats() {
+    const [totalUsers, activeMembers] = await Promise.all([
+      this.prismaService.user.count(),
+      this.prismaService.user.count({
+        where: {
+          gymMembership: {
+            status: 'ACTIVE',
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total: totalUsers,
+      active: activeMembers,
+      withoutMembership: totalUsers - activeMembers,
+    };
+  }
+
   async getAllUsers(paginationDto: PaginationDto) {
-    const { limit = 10, page = 1 } = paginationDto;
+    const { limit = 10, page = 1, search } = paginationDto;
     const skip = (page - 1) * limit;
+
+    const where: Prisma.UserWhereInput = {
+      ...(search && {
+        OR: [{ identification: { contains: search, mode: 'insensitive' } }],
+      }),
+    };
 
     const [users, total] = await this.prismaService.$transaction([
       this.prismaService.user.findMany({
+        where,
         omit: { password: true },
         skip,
         take: limit,
+        include: { gymMembership: true },
       }),
       this.prismaService.user.count(),
     ]);
-    return paginate(users, total, page, limit);
+
+    const userWithStats = users.map((user) => {
+      if (!user.gymMembership) {
+        return { ...user, membershipStats: null };
+      }
+
+      return {
+        ...user,
+        membershipStats: calculateMembershipStats(user.gymMembership),
+      };
+    });
+
+    return paginate(userWithStats, total, page, limit);
   }
 
   async getUserById(id: string) {
@@ -93,6 +133,7 @@ export class UsersService {
       return await this.prismaService.user.update({
         where: { id },
         data: updateUserDto,
+        omit: { password: true },
       });
     } catch (error) {
       if (

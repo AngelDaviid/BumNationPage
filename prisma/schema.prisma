@@ -29,8 +29,8 @@ model Product {
   deletedAt   DateTime?
   cartItems   CartItem[]
   orderItems  OrderItem[]
-  favorites   Favorite[]
   category    Category    @relation(fields: [categoryId], references: [id])
+  favorites   Favorite[]
 }
 
 model User {

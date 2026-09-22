@@ -11,10 +11,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signIn(
-    identification: string,
-    pass: string,
-  ): Promise<{ access_token: string }> {
+  async signIn(identification: string, pass: string) {
     const user =
       await this.usersService.getUserByIdentification(identification);
 
@@ -29,9 +26,12 @@ export class AuthService {
     }
 
     const payload = { sub: user.id, identification: user.identification };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...safeUser } = user;
 
     return {
       access_token: await this.jwtService.signAsync(payload),
+      user: safeUser,
     };
   }
 
@@ -39,9 +39,12 @@ export class AuthService {
     const user = await this.usersService.createUser(createUserDto);
 
     const payload = { sub: user.id, identification: user.identification };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...safeUser } = user;
 
     return {
       access_token: await this.jwtService.signAsync(payload),
+      user: safeUser,
     };
   }
 }
