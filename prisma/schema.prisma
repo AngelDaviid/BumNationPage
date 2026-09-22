@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,6 +6,129 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int         @default(0)
+  categoryId  Int
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  imageUrl    String?
+  brand       String?
+  isActive    Boolean     @default(true)
+  deletedAt   DateTime?
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  category    Category    @relation(fields: [categoryId], references: [id])
+  favorites   Favorite[]
+}
+
+model User {
+  id             String         @id @default(uuid())
+  identification String         @unique
+  firstName      String
+  middleName     String?
+  firstLastName  String
+  secondLastName String?
+  email          String         @unique
+  password       String
+  imageUrl       String?
+  role           Role           @default(CLIENT)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  phone          String?
+  cart           Cart?
+  gymMembership  GymMembership?
+  orders         Order[]
+  favorites      Favorite[]
+}
+
+model GymMembership {
+  id                 String              @id @default(uuid())
+  userId             String              @unique
+  startDate          DateTime
+  nextPaymentDate    DateTime
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  status             MembershipStatus    @default(ACTIVE)
+  expiredAt          DateTime?
+  user               User                @relation(fields: [userId], references: [id])
+  membershipPayments MembershipPayment[]
+}
+
+model MembershipPayment {
+  id           String        @id @default(uuid())
+  membershipId String
+  amount       Decimal       @db.Decimal(10, 2)
+  paidAt       DateTime      @default(now())
+  notes        String?
+  validFrom    DateTime
+  validUntil   DateTime
+  membership   GymMembership @relation(fields: [membershipId], references: [id])
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  userId       String
+  status       OrderStatus @default(PENDING_CONFIRMATION)
+  total        Decimal     @db.Decimal(10, 2)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  orderNumber  Int         @unique @default(autoincrement())
+  cancelReason String?
+  user         User        @relation(fields: [userId], references: [id])
+  items        OrderItem[]
+}
+
+model OrderItem {
+  id          String  @id @default(uuid())
+  orderId     String
+  productId   Int
+  quantity    Int
+  priceAtTime Decimal @db.Decimal(10, 2)
+  order       Order   @relation(fields: [orderId], references: [id])
+  product     Product @relation(fields: [productId], references: [id])
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  cartId    String
+  productId Int
+  quantity  Int
+  cart      Cart    @relation(fields: [cartId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  productId Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
 }
 
 enum Role {
@@ -33,114 +151,4 @@ enum MembershipStatus {
   EXPIRED
   SUSPENDED
   CANCELLED
-}
-
-model Category {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique
-  products Product[]
-}
-
-model Product {
-  id          Int         @id @default(autoincrement())
-  name        String
-  description String?
-  price       Decimal     @db.Decimal(10, 2)
-  stock       Int         @default(0)
-  categoryId  Int
-  brand       String?
-  category    Category    @relation(fields: [categoryId], references: [id])
-  imageUrl    String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderItems  OrderItem[]
-  cartItems   CartItem[]
-  isActive    Boolean     @default(true)
-  deletedAt   DateTime?
-}
-
-model User {
-  id             String         @id @default(uuid())
-  identification String         @unique
-  firstName      String
-  middleName     String?
-  firstLastName  String
-  secondLastName String?
-  email          String         @unique
-  phone          String?
-  password       String
-  imageUrl       String?
-  role           Role           @default(CLIENT)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  orders         Order[]
-  gymMembership  GymMembership?
-  cart           Cart?
-}
-
-model GymMembership {
-  id                 String              @id @default(uuid())
-  userId             String              @unique
-  user               User                @relation(fields: [userId], references: [id])
-  startDate          DateTime
-  nextPaymentDate    DateTime
-  status             MembershipStatus    @default(ACTIVE)
-  expiredAt          DateTime? 
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  membershipPayments MembershipPayment[]
-}
-
-model MembershipPayment {
-  id           String        @id @default(uuid())
-  membershipId String
-  membership   GymMembership @relation(fields: [membershipId], references: [id])
-  amount       Decimal       @db.Decimal(10, 2)
-  paidAt       DateTime      @default(now())
-  notes        String?
-  validFrom    DateTime
-  validUntil   DateTime
-}
-
-model Order {
-  id           String      @id @default(uuid())
-  orderNumber  Int         @unique @default(autoincrement())
-  userId       String
-  user         User        @relation(fields: [userId], references: [id])
-  items        OrderItem[]
-  status       OrderStatus @default(PENDING_CONFIRMATION)
-  total        Decimal     @db.Decimal(10, 2)
-  cancelReason String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-}
-
-model OrderItem {
-  id          String  @id @default(uuid())
-  orderId     String
-  order       Order   @relation(fields: [orderId], references: [id])
-  productId   Int
-  product     Product @relation(fields: [productId], references: [id])
-  quantity    Int
-  priceAtTime Decimal @db.Decimal(10, 2)
-}
-
-model Cart {
-  id        String     @id @default(uuid())
-  userId    String     @unique
-  user      User       @relation(fields: [userId], references: [id])
-  items     CartItem[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-}
-
-model CartItem {
-  id        String  @id @default(uuid())
-  cartId    String
-  cart      Cart    @relation(fields: [cartId], references: [id])
-  productId Int
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
-
-  @@unique([cartId, productId])
 }

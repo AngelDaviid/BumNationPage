@@ -29,6 +29,8 @@ async function bootstrap() {
     }),
   );
 
+  app.useGlobalFilters(new HttpExceptionFilter());
+
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') ?? 3000;
 

@@ -16,6 +16,7 @@ import { GymMembershipModule } from './gym-membership/gym-membership.module';
 import { envValidationSchema } from './config/env.config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     CartModule,
     OrdersModule,
     GymMembershipModule,
+    FavoritesModule,
   ],
   controllers: [OrdersController],
   providers: [
