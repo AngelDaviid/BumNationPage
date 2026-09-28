@@ -24,6 +24,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { Roles } from '../auth/decorators/role.decorator';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/interfaces/auth-user.interface';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { UpdateUserAdminDto } from './dto/update-user-dto-admin';
 
@@ -33,12 +34,12 @@ export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
   @Get('me')
-  getMyProfile(@CurrentUser() user) {
+  getMyProfile(@CurrentUser() user: AuthUser) {
     return this.userService.getUserById(user.id);
   }
 
   @Patch('me')
-  updateMyProfile(@CurrentUser() user, @Body() dto: UpdateUserDto) {
+  updateMyProfile(@CurrentUser() user: AuthUser, @Body() dto: UpdateUserDto) {
     return this.userService.updateUser(user.id, dto);
   }
 
@@ -51,7 +52,7 @@ export class UsersController {
   @Patch('me/image')
   @UseInterceptors(FileInterceptor('file'))
   uploadMyImage(
-    @CurrentUser() user,
+    @CurrentUser() user: AuthUser,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
