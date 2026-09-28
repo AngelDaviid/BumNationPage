@@ -12,6 +12,7 @@ import 'multer';
 import { Prisma } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate } from '../common/helpers/pagination.helper';
+import { ProductsQueryDto } from './dto/products-query.dto';
 
 @Injectable()
 export class ProductsService {
@@ -20,12 +21,13 @@ export class ProductsService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async getAllProducts(paginationDto: PaginationDto) {
-    const { limit = 10, page = 1, search } = paginationDto;
+  async getAllProducts(productsQueryDto: ProductsQueryDto) {
+    const { limit = 10, page = 1, search, categoryId } = productsQueryDto;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
       isActive: true,
+      ...(categoryId && { categoryId }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
@@ -43,9 +45,7 @@ export class ProductsService {
         include: { category: true },
         orderBy: { createdAt: 'desc' },
       }),
-      this.prismaService.product.count({
-        where: { isActive: true },
-      }),
+      this.prismaService.product.count({ where }),
     ]);
 
     return paginate(products, total, page, limit);

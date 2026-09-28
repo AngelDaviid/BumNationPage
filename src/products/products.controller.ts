@@ -23,6 +23,7 @@ import { Public } from '../auth/decorators/public.decorator';
 import { Role } from '@prisma/client';
 import { Roles } from '../auth/decorators/role.decorator';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { ProductsQueryDto } from './dto/products-query.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -30,8 +31,8 @@ export class ProductsController {
 
   @Public()
   @Get()
-  getAllProducts(@Query() paginationDto: PaginationDto) {
-    return this.productsService.getAllProducts(paginationDto);
+  getAllProducts(@Query() productsQueryDto: ProductsQueryDto) {
+    return this.productsService.getAllProducts(productsQueryDto);
   }
 
   @Public()
