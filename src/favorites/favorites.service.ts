@@ -7,7 +7,7 @@ export class FavoritesService {
 
   async getFavorites(userId: string) {
     return this.prismaService.favorite.findMany({
-      where: { userId },
+      where: { userId, product: { isActive: true, deletedAt: null } },
       include: { product: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -18,7 +18,7 @@ export class FavoritesService {
       where: { id: productId },
     });
 
-    if (!product) {
+    if (!product || !product.isActive || product.deletedAt) {
       throw new NotFoundException('Producto no encontrado');
     }
 
