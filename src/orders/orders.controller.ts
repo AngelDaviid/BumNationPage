@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/interfaces/auth-user.interface';
 import { Role } from '@prisma/client';
 import { Roles } from '../auth/decorators/role.decorator';
 import { UpdateOrderStatusDto } from './dtos/update-order-status.dto';
@@ -22,20 +23,23 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post('checkout')
-  async checkout(@CurrentUser() user) {
+  async checkout(@CurrentUser() user: AuthUser) {
     return this.ordersService.checkout(user.id);
   }
 
   @Get('me')
   async getMyOrders(
-    @CurrentUser() user,
+    @CurrentUser() user: AuthUser,
     @Query() paginationDto: PaginationDto,
   ) {
     return this.ordersService.getMyOrders(user.id, paginationDto);
   }
 
   @Get(':id')
-  getOrderById(@CurrentUser() user, @Param('id', ParseUUIDPipe) id: string) {
+  getOrderById(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.ordersService.getOrderById(
       user.id,
       id,
@@ -45,7 +49,7 @@ export class OrdersController {
 
   @Patch(':id/cancel')
   cancelMyOrder(
-    @CurrentUser() user,
+    @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() cancelOrderDto: CancelOrderDto,
   ) {

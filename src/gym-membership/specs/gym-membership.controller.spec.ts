@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { GymMembershipController } from './gym-membership.controller';
+import { GymMembershipController } from '../gym-membership.controller';
 
 describe('GymMembershipController', () => {
   let controller: GymMembershipController;
