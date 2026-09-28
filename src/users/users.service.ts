@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -148,6 +149,17 @@ export class UsersService {
 
   async deleteUser(id: string) {
     await this.getUserById(id);
+
+    const [ordersCount, membership] = await Promise.all([
+      this.prismaService.order.count({ where: { userId: id } }),
+      this.prismaService.gymMembership.findUnique({ where: { userId: id } }),
+    ]);
+
+    if (ordersCount > 0 || membership) {
+      throw new ConflictException(
+        'No se puede eliminar un usuario con órdenes o membresía registradas',
+      );
+    }
 
     return await this.prismaService.user.delete({
       where: { id },
