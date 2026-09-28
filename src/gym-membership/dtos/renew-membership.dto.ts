@@ -1,11 +1,5 @@
 import { Trim, Sanitize, Escape } from 'class-sanitizer';
-import {
-  IsDateString,
-  IsNumber,
-  IsOptional,
-  IsPositive,
-  IsString,
-} from 'class-validator';
+import { IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
 
 export class RenewMembershipDto {
   @IsNumber()

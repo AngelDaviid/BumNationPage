@@ -37,4 +37,4 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
 }
-bootstrap();
+void bootstrap();
