@@ -62,6 +62,7 @@ export class UsersService {
           ...createUserDto,
           password: hashedPassword,
         },
+        omit: { password: true },
       });
     } catch (error) {
       if (
@@ -93,6 +94,7 @@ export class UsersService {
       return await this.prismaService.user.update({
         where: { id },
         data: updateUserDto,
+        omit: { password: true },
       });
     } catch (error) {
       if (
