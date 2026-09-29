@@ -3,7 +3,6 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
-import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -26,22 +25,25 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales Incorrectas');
     }
 
-    return this.buildAuthResponse(await this.usersService.getUserById(user.id));
-  }
-
-  async signUp(createUserDto: CreateUserDto) {
-    const user = await this.usersService.createUser(createUserDto);
-
-    return this.buildAuthResponse(user);
-  }
-
-  private async buildAuthResponse(user: Omit<User, 'password'>) {
     const payload = { sub: user.id, identification: user.identification };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...safeUser } = user;
 
     return {
       access_token: await this.jwtService.signAsync(payload),
       user: safeUser,
+    };
+  }
+
+  async signUp(createUserDto: CreateUserDto) {
+    // createUser ya devuelve el usuario sin la contraseña
+    const user = await this.usersService.createUser(createUserDto);
+
+    const payload = { sub: user.id, identification: user.identification };
+
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+      user,
     };
   }
 }
