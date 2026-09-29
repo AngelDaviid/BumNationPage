@@ -1,5 +1,11 @@
 import { Trim, Sanitize, Escape } from 'class-sanitizer';
-import { IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+} from 'class-validator';
 
 export class RenewMembershipDto {
   @IsNumber()
@@ -11,4 +17,8 @@ export class RenewMembershipDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsDateString()
+  paidAt?: string;
 }

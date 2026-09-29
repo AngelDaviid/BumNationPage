@@ -113,8 +113,19 @@ export class GymMembershipService {
     }
 
     const now = new Date();
+    const paidAt = renewMembershipDto.paidAt
+      ? new Date(renewMembershipDto.paidAt)
+      : now;
+
+    if (paidAt > now) {
+      throw new BadRequestException(
+        'La fecha de pago no puede ser posterior a hoy',
+      );
+    }
+
+
     const validFrom =
-      membership.nextPaymentDate > now ? membership.nextPaymentDate : now;
+      membership.nextPaymentDate > paidAt ? membership.nextPaymentDate : paidAt;
     const validUntil = addOneMonth(validFrom);
 
     return this.prismaService.$transaction(async (tx) => {
@@ -123,6 +134,7 @@ export class GymMembershipService {
           membershipId: membership.id,
           amount: renewMembershipDto.amount,
           notes: renewMembershipDto.notes,
+          paidAt,
           validFrom,
           validUntil,
         },
