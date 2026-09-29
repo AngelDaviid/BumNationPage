@@ -3,19 +3,23 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
+import helmet from 'helmet';
+import { sanitize } from 'class-sanitizer';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const configService = app.get(ConfigService);
+  app.use(helmet());
 
   app.enableCors({
-    origin: configService
-      .get<string>('FRONTEND_URL', 'http://localhost:3001')
-      .split(',')
-      .map((url) => url.trim()),
+    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    methods: ['GET', 'POST', 'DELETE', 'PATCH'],
     credentials: true,
   });
+
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  sanitize(app);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -32,4 +36,4 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
 }
-bootstrap();
+void bootstrap();

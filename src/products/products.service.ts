@@ -12,6 +12,7 @@ import 'multer';
 import { Prisma } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate } from '../common/helpers/pagination.helper';
+import { ProductsQueryDto } from './dto/products-query.dto';
 
 @Injectable()
 export class ProductsService {
@@ -20,7 +21,37 @@ export class ProductsService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async getAllProducts(paginationDto: PaginationDto) {
+  async getAllProducts(productsQueryDto: ProductsQueryDto) {
+    const { limit = 10, page = 1, search, categoryId } = productsQueryDto;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ProductWhereInput = {
+      isActive: true,
+      ...(categoryId && { categoryId }),
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { brand: { contains: search, mode: 'insensitive' } },
+          { category: { name: { contains: search, mode: 'insensitive' } } },
+        ],
+      }),
+    };
+
+    const [products, total] = await this.prismaService.$transaction([
+      this.prismaService.product.findMany({
+        where,
+        skip,
+        take: limit,
+        include: { category: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prismaService.product.count({ where }),
+    ]);
+
+    return paginate(products, total, page, limit);
+  }
+
+  async getAllProductsAdmin(paginationDto: PaginationDto) {
     const { limit = 10, page = 1 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -38,13 +69,14 @@ export class ProductsService {
   }
 
   async getProductById(id: number) {
-    const product = await this.prismaService.product.findUnique({
+    const product = await this.prismaService.product.findFirst({
       where: {
         id,
+        isActive: true,
       },
     });
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException('Producto no encontrado');
     }
     return product;
   }
@@ -102,8 +134,31 @@ export class ProductsService {
   async deleteProduct(id: number) {
     await this.getProductById(id);
 
-    return this.prismaService.product.delete({
+    return this.prismaService.product.update({
       where: { id },
+      data: { deletedAt: new Date(), isActive: false },
+    });
+  }
+
+  async restoreProduct(id: number) {
+    const product = await this.prismaService.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (product.isActive) {
+      throw new BadRequestException('El producto ya está activo');
+    }
+
+    return this.prismaService.product.update({
+      where: { id },
+      data: {
+        isActive: true,
+        deletedAt: null,
+      },
     });
   }
 }

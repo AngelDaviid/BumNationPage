@@ -22,7 +22,28 @@ export class OrdersService {
       throw new NotFoundException('Tu carrito está vacío');
     }
 
-    for (const item of cart.items) {
+    const inactiveItems = cart.items.filter((item) => !item.product.isActive);
+    const validItems = cart.items.filter((item) => item.product.isActive);
+
+    if (inactiveItems.length > 0) {
+      await this.prismaService.cartItem.deleteMany({
+        where: {
+          id: { in: inactiveItems.map((item) => item.id) },
+        },
+      });
+
+      const names = inactiveItems.map((item) => item.product.name).join(', ');
+
+      throw new BadRequestException(
+        `Los siguientes productos ya no están disponibles y fueron eliminados de tu carrito: ${names}. Por favor revisa tu carrito e intenta de nuevo.`,
+      );
+    }
+
+    if (validItems.length === 0) {
+      throw new NotFoundException('Tu carrito está vacío');
+    }
+
+    for (const item of validItems) {
       if (item.product.stock < item.quantity) {
         throw new BadRequestException(
           `No hay suficiente stock de "${item.product.name}". Disponible: ${item.product.stock}`,
@@ -30,7 +51,7 @@ export class OrdersService {
       }
     }
 
-    const total = cart.items.reduce(
+    const total = validItems.reduce(
       (sum, item) => sum + Number(item.product.price) * item.quantity,
       0,
     );
@@ -42,7 +63,7 @@ export class OrdersService {
           total,
           status: 'PENDING_CONFIRMATION',
           items: {
-            create: cart.items.map((item) => ({
+            create: validItems.map((item) => ({
               productId: item.productId,
               quantity: item.quantity,
               priceAtTime: item.product.price,
@@ -52,7 +73,7 @@ export class OrdersService {
         include: { items: { include: { product: true } } },
       });
 
-      for (const item of cart.items) {
+      for (const item of validItems) {
         await tx.product.update({
           where: { id: item.productId },
           data: { stock: { decrement: item.quantity } },

@@ -14,9 +14,13 @@ import { OrdersController } from './orders/orders.controller';
 import { OrdersModule } from './orders/orders.module';
 import { GymMembershipModule } from './gym-membership/gym-membership.module';
 import { envValidationSchema } from './config/env.config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: envValidationSchema,
@@ -24,6 +28,18 @@ import { envValidationSchema } from './config/env.config';
         abortEarly: false,
       },
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,
+        limit: 50,
+      },
+      {
+        name: 'long',
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ProductsModule,
     CategoryModule,
     PrismaModule,
@@ -32,9 +48,14 @@ import { envValidationSchema } from './config/env.config';
     CartModule,
     OrdersModule,
     GymMembershipModule,
+    FavoritesModule,
   ],
   controllers: [OrdersController],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

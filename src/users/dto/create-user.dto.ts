@@ -1,3 +1,4 @@
+import { Trim, Sanitize, Escape } from 'class-sanitizer';
 import {
   IsString,
   IsNotEmpty,
@@ -13,22 +14,31 @@ export class CreateUserDto {
   @Matches(/^\d+$/, { message: 'La identificación solo debe contener números' })
   identification!: string;
 
+  @Trim()
+  @Sanitize(Escape)
   @IsString()
   @IsNotEmpty()
   firstName!: string;
 
+  @Trim()
+  @Sanitize(Escape)
   @IsOptional()
   @IsString()
   middleName?: string;
 
+  @Trim()
+  @Sanitize(Escape)
   @IsString()
   @IsNotEmpty()
   firstLastName!: string;
 
+  @Trim()
+  @Sanitize(Escape)
   @IsOptional()
   @IsString()
   secondLastName?: string;
 
+  @Trim()
   @IsEmail({}, { message: 'El email no tiene un formato válido' })
   email!: string;
 

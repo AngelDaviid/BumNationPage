@@ -7,35 +7,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateMembershipDto } from './dtos/create-membership.dto';
 import { RenewMembershipDto } from './dtos/renew-membership.dto';
 import { UpdateMembershipStatusDto } from './dtos/update-membership-status.dto';
+import { calculateMembershipStats } from '../common/utils/membership-stats.util';
+import { MembershipStatus, Prisma } from '@prisma/client';
+import { addOneMonth } from '../common/utils/date.utils';
 
 @Injectable()
 export class GymMembershipService {
   constructor(private readonly prismaService: PrismaService) {}
-
-  private calculateMembershipStats(membership: {
-    startDate: Date;
-    nextPaymentDate: Date;
-    status: string;
-  }) {
-    const today = new Date();
-
-    const daysAsMember = Math.floor(
-      (today.getTime() - membership.startDate.getTime()) /
-        (1000 * 60 * 60 * 24),
-    );
-
-    const daysUntilExpire = Math.floor(
-      (membership.nextPaymentDate.getTime() - today.getTime()) /
-        (1000 * 60 * 60 * 24),
-    );
-
-    return {
-      daysAsMember,
-      daysUntilExpire: Math.max(0, daysUntilExpire),
-      isAboutToExpire: daysUntilExpire <= 7 && daysUntilExpire >= 0,
-      isExpired: daysUntilExpire < 0,
-    };
-  }
 
   async createMembership(
     userId: string,
@@ -49,30 +27,70 @@ export class GymMembershipService {
       throw new NotFoundException(`Usuario no encontrado`);
     }
 
-    const existing = await this.prismaService.gymMembership.findUnique({
-      where: { userId },
-    });
+    const existingMembership =
+      await this.prismaService.gymMembership.findUnique({
+        where: { userId },
+      });
 
-    if (existing) {
-      throw new BadRequestException(`El usuario ya tiene una membresía activa`);
+    if (
+      existingMembership &&
+      existingMembership.status !== MembershipStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        existingMembership.status === MembershipStatus.ACTIVE
+          ? 'El usuario ya tiene una membresía activa'
+          : 'El usuario tiene una membresía expirada, debe renovarla',
+      );
     }
 
-    return this.prismaService.gymMembership.create({
-      data: {
-        userId,
-        startDate: new Date(createMembershipDto.startDate),
-        nextPaymentDate: new Date(createMembershipDto.nextPaymentDate),
-      },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            firstLastName: true,
-            email: true,
-            phone: true,
-          },
+    const { startDate, initialPayment } = createMembershipDto;
+    const parsedStartDate = new Date(startDate);
+    const validUntil = addOneMonth(parsedStartDate);
+    const include = {
+      user: {
+        select: {
+          firstName: true,
+          firstLastName: true,
+          email: true,
+          phone: true,
         },
       },
+      membershipPayment: { orderBy: { paidAt: 'desc' as const } },
+    };
+
+    return this.prismaService.$transaction(async (tx) => {
+      const membership = existingMembership
+        ? await tx.gymMembership.update({
+            where: { userId },
+            data: {
+              startDate: parsedStartDate,
+              nextPaymentDate: validUntil,
+              status: MembershipStatus.ACTIVE,
+              expiredAt: null,
+            },
+          })
+        : await tx.gymMembership.create({
+            data: {
+              userId,
+              startDate: parsedStartDate,
+              nextPaymentDate: validUntil,
+            },
+          });
+
+      await tx.membershipPayment.create({
+        data: {
+          membershipId: membership.id,
+          amount: initialPayment.amount,
+          notes: initialPayment.notes,
+          validFrom: parsedStartDate,
+          validUntil,
+        },
+      });
+
+      return tx.gymMembership.findUnique({
+        where: { id: membership.id },
+        include,
+      });
     });
   }
 
@@ -94,22 +112,28 @@ export class GymMembershipService {
       );
     }
 
+    const now = new Date();
+    const validFrom =
+      membership.nextPaymentDate > now ? membership.nextPaymentDate : now;
+    const validUntil = addOneMonth(validFrom);
+
     return this.prismaService.$transaction(async (tx) => {
       await tx.membershipPayment.create({
         data: {
           membershipId: membership.id,
           amount: renewMembershipDto.amount,
           notes: renewMembershipDto.notes,
-          validFrom: new Date(renewMembershipDto.validFrom),
-          validUntil: new Date(renewMembershipDto.validUntil),
+          validFrom,
+          validUntil,
         },
       });
 
       return tx.gymMembership.update({
         where: { userId },
         data: {
-          nextPaymentDate: new Date(renewMembershipDto.validUntil),
+          nextPaymentDate: validUntil,
           status: 'ACTIVE',
+          expiredAt: null,
         },
         include: {
           membershipPayments: { orderBy: { paidAt: 'desc' } },
@@ -144,9 +168,21 @@ export class GymMembershipService {
       );
     }
 
+    const data: Prisma.GymMembershipUpdateInput = {
+      status: updateMembershipDto.status,
+    };
+
+    if (updateMembershipDto.status === MembershipStatus.EXPIRED) {
+      data.expiredAt = membership.expiredAt ?? new Date();
+    }
+
+    if (updateMembershipDto.status === MembershipStatus.ACTIVE) {
+      data.expiredAt = null;
+    }
+
     return this.prismaService.gymMembership.update({
       where: { userId },
-      data: { status: updateMembershipDto.status },
+      data,
     });
   }
 
@@ -168,7 +204,7 @@ export class GymMembershipService {
 
     return memberships.map((m) => ({
       ...m,
-      ...this.calculateMembershipStats(m),
+      ...calculateMembershipStats(m),
     }));
   }
 
@@ -194,7 +230,7 @@ export class GymMembershipService {
 
     return {
       ...membership,
-      ...this.calculateMembershipStats(membership),
+      ...calculateMembershipStats(membership),
     };
   }
 
@@ -212,7 +248,7 @@ export class GymMembershipService {
 
     return {
       ...membership,
-      ...this.calculateMembershipStats(membership),
+      ...calculateMembershipStats(membership),
     };
   }
 

@@ -35,13 +35,13 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
-  // El frontend guarda el usuario (con su rol) junto al token al iniciar sesión
   private async buildAuthResponse(user: Omit<User, 'password'>) {
     const payload = { sub: user.id, identification: user.identification };
+    const { password, ...safeUser } = user;
 
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user,
+      user: safeUser,
     };
   }
 }

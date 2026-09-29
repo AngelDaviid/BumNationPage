@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { GymMembershipService } from './gym-membership.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/interfaces/auth-user.interface';
 import { Roles } from '../auth/decorators/role.decorator';
 import { Role } from '@prisma/client';
 import { CreateMembershipDto } from './dtos/create-membership.dto';
@@ -20,12 +21,12 @@ export class GymMembershipController {
   constructor(private readonly gymMembershipService: GymMembershipService) {}
 
   @Get('me')
-  getMyMembership(@CurrentUser() user) {
+  getMyMembership(@CurrentUser() user: AuthUser) {
     return this.gymMembershipService.getMyMembership(user.id);
   }
 
   @Get('me/payments')
-  getMyPayments(@CurrentUser() user) {
+  getMyPayments(@CurrentUser() user: AuthUser) {
     return this.gymMembershipService.getMyPayments(user.id);
   }
 
@@ -37,7 +38,10 @@ export class GymMembershipController {
 
   @Roles(Role.ADMIN)
   @Get(':userId')
-  getMembershipByUserId(@CurrentUser() user, @Param('userId') userId: string) {
+  getMembershipByUserId(
+    @CurrentUser() user: AuthUser,
+    @Param('userId') userId: string,
+  ) {
     return this.gymMembershipService.getMembershipByUserId(userId);
   }
 
