@@ -123,7 +123,6 @@ export class GymMembershipService {
       );
     }
 
-
     const validFrom =
       membership.nextPaymentDate > paidAt ? membership.nextPaymentDate : paidAt;
     const validUntil = addOneMonth(validFrom);
