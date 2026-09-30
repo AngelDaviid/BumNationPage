@@ -12,7 +12,16 @@ import 'multer';
 import { Prisma } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate } from '../common/helpers/pagination.helper';
-import { ProductsQueryDto } from './dto/products-query.dto';
+import { ProductSort, ProductsQueryDto } from './dto/products-query.dto';
+
+const PRODUCT_ORDER_BY: Record<
+  ProductSort,
+  Prisma.ProductOrderByWithRelationInput[]
+> = {
+  newest: [{ createdAt: 'desc' }],
+  price_asc: [{ price: 'asc' }, { id: 'asc' }],
+  price_desc: [{ price: 'desc' }, { id: 'asc' }],
+};
 
 @Injectable()
 export class ProductsService {
@@ -22,12 +31,22 @@ export class ProductsService {
   ) {}
 
   async getAllProducts(productsQueryDto: ProductsQueryDto) {
-    const { limit = 10, page = 1, search, categoryId } = productsQueryDto;
+    const {
+      limit = 10,
+      page = 1,
+      search,
+      categoryId,
+      brand,
+      sort = 'newest',
+      inStock,
+    } = productsQueryDto;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
       isActive: true,
       ...(categoryId && { categoryId }),
+      ...(brand && { brand: { equals: brand, mode: 'insensitive' } }),
+      ...(inStock && { stock: { gt: 0 } }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
@@ -43,7 +62,7 @@ export class ProductsService {
         skip,
         take: limit,
         include: { category: true },
-        orderBy: { createdAt: 'desc' },
+        orderBy: PRODUCT_ORDER_BY[sort],
       }),
       this.prismaService.product.count({ where }),
     ]);
@@ -68,12 +87,26 @@ export class ProductsService {
     return paginate(products, total, page, limit);
   }
 
+  // Marcas de los productos visibles, para el filtro de la tienda
+  async getBrands() {
+    const rows = await this.prismaService.product.findMany({
+      where: { isActive: true, brand: { not: null } },
+      distinct: ['brand'],
+      select: { brand: true },
+      orderBy: { brand: 'asc' },
+    });
+    return rows
+      .map((row) => row.brand)
+      .filter((brand): brand is string => !!brand?.trim());
+  }
+
   async getProductById(id: number) {
     const product = await this.prismaService.product.findFirst({
       where: {
         id,
         isActive: true,
       },
+      include: { category: true },
     });
     if (!product) {
       throw new NotFoundException('Producto no encontrado');
