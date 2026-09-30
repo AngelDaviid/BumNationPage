@@ -26,7 +26,6 @@ export class FavoritesService {
       where: { userId_productId: { userId, productId } },
       create: { userId, productId },
       update: {},
-      include: { product: true },
     });
   }
 
@@ -41,7 +40,6 @@ export class FavoritesService {
 
     return this.prismaService.favorite.delete({
       where: { userId_productId: { userId, productId } },
-      include: { product: true },
     });
   }
 
