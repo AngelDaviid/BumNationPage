@@ -36,6 +36,12 @@ export class ProductsController {
   }
 
   @Public()
+  @Get('brands')
+  getBrands() {
+    return this.productsService.getBrands();
+  }
+
+  @Public()
   @Get(':id')
   getProductById(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.getProductById(id);

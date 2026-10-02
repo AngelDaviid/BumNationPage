@@ -38,13 +38,18 @@ export class CartService {
       throw new NotFoundException('Producto no encontrado');
     }
 
-    if (product.stock < quantity) {
+    const cart = await this.getOrCreateCart(userId);
+
+    const inCart =
+      cart.items.find((item) => item.productId === productId)?.quantity ?? 0;
+
+    if (product.stock < inCart + quantity) {
       throw new BadRequestException(
-        `Solo hay ${product.stock} unidades disponibles de "${product.name}"`,
+        inCart > 0
+          ? `Solo hay ${product.stock} unidades de "${product.name}" y ya tienes ${inCart} en el carrito`
+          : `Solo hay ${product.stock} unidades disponibles de "${product.name}"`,
       );
     }
-
-    const cart = await this.getOrCreateCart(userId);
 
     return this.prismaService.cartItem.upsert({
       where: { cartId_productId: { cartId: cart.id, productId } },

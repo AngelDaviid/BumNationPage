@@ -102,7 +102,7 @@ export class OrdersService {
         include: { items: { include: { product: true } } },
         orderBy: { createdAt: 'desc' },
       }),
-      this.prismaService.order.count(),
+      this.prismaService.order.count({ where: { userId } }),
     ]);
     return paginate(orders, total, page, limit);
   }
