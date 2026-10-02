@@ -40,7 +40,6 @@ export class CartService {
 
     const cart = await this.getOrCreateCart(userId);
 
-    // Cuenta lo que ya está en el carrito, porque el upsert suma la cantidad
     const inCart =
       cart.items.find((item) => item.productId === productId)?.quantity ?? 0;
 

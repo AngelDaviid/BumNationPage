@@ -35,7 +35,6 @@ export class ProductsController {
     return this.productsService.getAllProducts(productsQueryDto);
   }
 
-  // Va antes de ':id' para que Nest no lo tome como un id
   @Public()
   @Get('brands')
   getBrands() {

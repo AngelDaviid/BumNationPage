@@ -29,7 +29,6 @@ export class ProductsQueryDto extends PaginationDto {
   })
   sort?: ProductSort;
 
-  // Llega como texto en la URL (?inStock=true)
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()

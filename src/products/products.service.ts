@@ -87,7 +87,6 @@ export class ProductsService {
     return paginate(products, total, page, limit);
   }
 
-  // Marcas de los productos visibles, para el filtro de la tienda
   async getBrands() {
     const rows = await this.prismaService.product.findMany({
       where: { isActive: true, brand: { not: null } },
