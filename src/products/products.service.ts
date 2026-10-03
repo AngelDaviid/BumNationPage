@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -25,6 +26,8 @@ const PRODUCT_ORDER_BY: Record<
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly cloudinaryService: CloudinaryService,
@@ -132,13 +135,49 @@ export class ProductsService {
   }
 
   async uploadProductImage(id: number, file: Express.Multer.File) {
-    await this.getProductById(id);
+    const product = await this.getProductById(id);
 
     const result = await this.cloudinaryService.uploadImage(file);
 
-    return this.prismaService.product.update({
+    const updated = await this.prismaService.product.update({
       where: { id },
-      data: { imageUrl: result.secure_url },
+      data: { imageUrl: result.secure_url, imagePublicId: result.public_id },
+    });
+
+    this.deleteStoredImage(product);
+    return updated;
+  }
+
+  async removeProductImage(id: number) {
+    const product = await this.getProductById(id);
+
+    const updated = await this.prismaService.product.update({
+      where: { id },
+      data: { imageUrl: null, imagePublicId: null },
+    });
+
+    this.deleteStoredImage(product);
+    return updated;
+  }
+
+  // Borra la imagen anterior de Cloudinary sin bloquear la respuesta;
+  // si falla solo se registra, el producto ya quedó actualizado.
+  private deleteStoredImage(product: {
+    imageUrl: string | null;
+    imagePublicId: string | null;
+  }) {
+    const publicId =
+      product.imagePublicId ??
+      (product.imageUrl
+        ? this.cloudinaryService.getPublicIdFromUrl(product.imageUrl)
+        : null);
+
+    if (!publicId) return;
+
+    this.cloudinaryService.deleteImage(publicId).catch((error: unknown) => {
+      this.logger.warn(
+        `No se pudo borrar la imagen ${publicId} de Cloudinary: ${String(error)}`,
+      );
     });
   }
 
