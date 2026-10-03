@@ -160,8 +160,6 @@ export class ProductsService {
     return updated;
   }
 
-  // Borra la imagen anterior de Cloudinary sin bloquear la respuesta;
-  // si falla solo se registra, el producto ya quedó actualizado.
   private deleteStoredImage(product: {
     imageUrl: string | null;
     imagePublicId: string | null;
