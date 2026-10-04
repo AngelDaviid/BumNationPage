@@ -78,6 +78,12 @@ export class ProductsController {
   }
 
   @Roles(Role.ADMIN)
+  @Delete(':id/image')
+  removeProductImage(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.removeProductImage(id);
+  }
+
+  @Roles(Role.ADMIN)
   @Patch(':id')
   updateProduct(
     @Param('id', ParseIntPipe) id: number,

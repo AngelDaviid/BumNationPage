@@ -11,10 +11,7 @@ export class CloudinaryService {
         {
           folder: 'bum-nation/products',
           allowed_formats: ['jpg', 'png', 'webp', 'jpeg'],
-          transformation: [
-            { width: 800, height: 800, crop: 'limit' },
-            { quality: 'auto', fetch_format: 'auto' },
-          ],
+          transformation: [{ width: 2000, height: 2000, crop: 'limit' }],
         },
         (error, result) => {
           if (error) {
@@ -35,5 +32,22 @@ export class CloudinaryService {
 
   async deleteImage(publicId: string): Promise<void> {
     await cloudinary.uploader.destroy(publicId);
+  }
+
+  // Respaldo para imágenes subidas antes de guardar el public_id:
+  // .../image/upload/v123/bum-nation/products/abc.jpg -> bum-nation/products/abc
+  getPublicIdFromUrl(url: string): string | null {
+    const path = url.split('?')[0].split('/upload/')[1];
+    if (!path) return null;
+
+    const segments = path.split('/');
+    const versionIndex = segments.findIndex((s) => /^v\d+$/.test(s));
+    const idSegments =
+      versionIndex >= 0
+        ? segments.slice(versionIndex + 1)
+        : segments.filter((s) => !s.includes(','));
+
+    const publicId = idSegments.join('/').replace(/\.[a-z0-9]+$/i, '');
+    return publicId || null;
   }
 }
