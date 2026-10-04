@@ -191,6 +191,18 @@ export class OrdersService {
       throw new NotFoundException('Order no encontrada');
     }
 
+    if (status === 'CANCELLED') {
+      throw new BadRequestException(
+        'Para cancelar una orden usa la opción de cancelar',
+      );
+    }
+
+    if (order.status === 'CANCELLED') {
+      throw new BadRequestException(
+        'Una orden cancelada no puede cambiar de estado',
+      );
+    }
+
     return this.prismaService.order.update({
       where: { id: orderId },
       data: { status },
