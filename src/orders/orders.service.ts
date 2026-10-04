@@ -8,6 +8,13 @@ import { OrderStatus } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate } from '../common/helpers/pagination.helper';
 
+const ADMIN_CANCELLABLE_STATUSES: OrderStatus[] = [
+  'PENDING_CONFIRMATION',
+  'CONFIRMED',
+  'AWAITING_PAYMENT',
+  'PAID',
+];
+
 @Injectable()
 export class OrdersService {
   constructor(private readonly prismaService: PrismaService) {}
@@ -184,6 +191,18 @@ export class OrdersService {
       throw new NotFoundException('Order no encontrada');
     }
 
+    if (status === 'CANCELLED') {
+      throw new BadRequestException(
+        'Para cancelar una orden usa la opción de cancelar',
+      );
+    }
+
+    if (order.status === 'CANCELLED') {
+      throw new BadRequestException(
+        'Una orden cancelada no puede cambiar de estado',
+      );
+    }
+
     return this.prismaService.order.update({
       where: { id: orderId },
       data: { status },
@@ -227,14 +246,22 @@ export class OrdersService {
       const result = await tx.order.updateMany({
         where: {
           id: orderId,
-          status: { not: 'CANCELLED' },
+          status: { in: ADMIN_CANCELLABLE_STATUSES },
         },
         data: { status: 'CANCELLED', cancelReason: reason },
       });
 
       if (result.count === 0) {
-        throw new NotFoundException(
-          'Orden no encontrada o ya estaba cancelada',
+        const order = await tx.order.findUnique({ where: { id: orderId } });
+
+        if (!order) {
+          throw new NotFoundException('Orden no encontrada');
+        }
+
+        throw new BadRequestException(
+          order.status === 'CANCELLED'
+            ? 'La orden ya estaba cancelada'
+            : 'La orden ya fue enviada o entregada y no se puede cancelar',
         );
       }
 
