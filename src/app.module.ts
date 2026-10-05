@@ -17,6 +17,7 @@ import { envValidationSchema } from './config/env.config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FavoritesModule } from './favorites/favorites.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { FavoritesModule } from './favorites/favorites.module';
     OrdersModule,
     GymMembershipModule,
     FavoritesModule,
+    MailModule,
   ],
   controllers: [OrdersController],
   providers: [

@@ -7,10 +7,21 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate } from '../common/helpers/pagination.helper';
+import { MailService } from '../mail/mail.service';
+
+const ADMIN_CANCELLABLE_STATUSES: OrderStatus[] = [
+  'PENDING_CONFIRMATION',
+  'CONFIRMED',
+  'AWAITING_PAYMENT',
+  'PAID',
+];
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async checkout(userId: string) {
     const cart = await this.prismaService.cart.findUnique({
@@ -86,6 +97,8 @@ export class OrdersService {
 
       return newOrder;
     });
+
+    void this.notifyStatusChange(order.id);
 
     return order;
   }
@@ -184,14 +197,32 @@ export class OrdersService {
       throw new NotFoundException('Order no encontrada');
     }
 
-    return this.prismaService.order.update({
+    if (status === 'CANCELLED') {
+      throw new BadRequestException(
+        'Para cancelar una orden usa la opción de cancelar',
+      );
+    }
+
+    if (order.status === 'CANCELLED') {
+      throw new BadRequestException(
+        'Una orden cancelada no puede cambiar de estado',
+      );
+    }
+
+    const updated = await this.prismaService.order.update({
       where: { id: orderId },
       data: { status },
     });
+
+    if (order.status !== status) {
+      void this.notifyStatusChange(orderId);
+    }
+
+    return updated;
   }
 
   async cancelMyOrder(userId: string, orderId: string, reason?: string) {
-    return this.prismaService.$transaction(async (tx) => {
+    const cancelled = await this.prismaService.$transaction(async (tx) => {
       const result = await tx.order.updateMany({
         where: {
           id: orderId,
@@ -220,21 +251,33 @@ export class OrdersService {
 
       return tx.order.findUnique({ where: { id: orderId } });
     });
+
+    void this.notifyStatusChange(orderId);
+
+    return cancelled;
   }
 
   async cancelOrderAsAdmin(orderId: string, reason?: string) {
-    return this.prismaService.$transaction(async (tx) => {
+    const cancelled = await this.prismaService.$transaction(async (tx) => {
       const result = await tx.order.updateMany({
         where: {
           id: orderId,
-          status: { not: 'CANCELLED' },
+          status: { in: ADMIN_CANCELLABLE_STATUSES },
         },
         data: { status: 'CANCELLED', cancelReason: reason },
       });
 
       if (result.count === 0) {
-        throw new NotFoundException(
-          'Orden no encontrada o ya estaba cancelada',
+        const order = await tx.order.findUnique({ where: { id: orderId } });
+
+        if (!order) {
+          throw new NotFoundException('Orden no encontrada');
+        }
+
+        throw new BadRequestException(
+          order.status === 'CANCELLED'
+            ? 'La orden ya estaba cancelada'
+            : 'La orden ya fue enviada o entregada y no se puede cancelar',
         );
       }
 
@@ -250,6 +293,38 @@ export class OrdersService {
       }
 
       return tx.order.findUnique({ where: { id: orderId } });
+    });
+
+    void this.notifyStatusChange(orderId);
+
+    return cancelled;
+  }
+
+  private async notifyStatusChange(orderId: string) {
+    const order = await this.prismaService.order
+      .findUnique({
+        where: { id: orderId },
+        include: {
+          user: { select: { email: true, firstName: true } },
+          items: { include: { product: { select: { name: true } } } },
+        },
+      })
+      .catch(() => null);
+
+    if (!order) return;
+
+    this.mailService.sendOrderStatus(order.user.email, {
+      firstName: order.user.firstName,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      total: Number(order.total),
+      cancelReason: order.cancelReason,
+      items: order.items.map((item) => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: Number(item.priceAtTime),
+      })),
     });
   }
 }
