@@ -20,4 +20,11 @@ export const envValidationSchema = Joi.object({
     .default('development'),
 
   FRONTEND_URL: Joi.string().default('http://localhost:3001'),
+
+  MAIL_HOST: Joi.string().default('smtp.gmail.com'),
+  MAIL_PORT: Joi.number().default(465),
+  MAIL_USER: Joi.string().email().optional(),
+  MAIL_APP_PASSWORD: Joi.string().optional(),
+  MAIL_FROM_NAME: Joi.string().default('BumNation GYM'),
+  MAIL_LOGO_URL: Joi.string().uri().optional(),
 });
