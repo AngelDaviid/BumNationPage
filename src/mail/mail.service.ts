@@ -52,6 +52,7 @@ export class MailService {
 
     this.transporter
       .sendMail({ from: this.from, to, subject, html })
+      .then(() => this.logger.log(`Correo "${subject}" enviado a ${to}`))
       .catch((error: Error) =>
         this.logger.error(
           `No se pudo enviar el correo a ${to}: ${error.message}`,
