@@ -38,20 +38,20 @@ export class MailService {
     to: string,
     data: Omit<OrderStatusEmailData, 'frontendUrl' | 'logoUrl'>,
   ) {
-    const { subject, html } = orderStatusEmail({
+    const { subject, html, text } = orderStatusEmail({
       ...data,
       frontendUrl: this.config.get<string>('FRONTEND_URL')!,
       logoUrl: this.config.get<string>('MAIL_LOGO_URL'),
     });
 
-    this.send(to, subject, html);
+    this.send(to, subject, html, text);
   }
 
-  private send(to: string, subject: string, html: string) {
+  private send(to: string, subject: string, html: string, text: string) {
     if (!this.transporter) return;
 
     this.transporter
-      .sendMail({ from: this.from, to, subject, html })
+      .sendMail({ from: this.from, to, subject, html, text })
       .then(() => this.logger.log(`Correo "${subject}" enviado a ${to}`))
       .catch((error: Error) =>
         this.logger.error(

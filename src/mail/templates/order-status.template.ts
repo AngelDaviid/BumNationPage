@@ -161,8 +161,30 @@ export function orderStatusEmail(data: OrderStatusEmailData) {
   </body>
 </html>`;
 
+  const text = [
+    `Hola ${data.firstName},`,
+    '',
+    copy.message,
+    '',
+    `Pedido #${data.orderNumber}: ${copy.label}`,
+    ...(data.status === 'CANCELLED' && data.cancelReason
+      ? [`Motivo: ${data.cancelReason}`]
+      : []),
+    '',
+    ...data.items.map(
+      (item) =>
+        `${item.name} x${item.quantity}: ${currency.format(item.price * item.quantity)}`,
+    ),
+    `Total: ${currency.format(data.total)}`,
+    '',
+    `Ver mi pedido: ${orderUrl}`,
+    '',
+    'BumNation GYM',
+  ].join('\n');
+
   return {
     subject: `${copy.subject} · Pedido #${data.orderNumber}`,
     html,
+    text,
   };
 }
