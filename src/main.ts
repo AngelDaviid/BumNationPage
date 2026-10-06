@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { sanitize } from 'class-sanitizer';
 
 async function bootstrap() {
@@ -19,6 +20,7 @@ async function bootstrap() {
   }
 
   app.use(helmet());
+  app.use(cookieParser());
 
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3001',
