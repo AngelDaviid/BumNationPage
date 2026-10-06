@@ -41,16 +41,16 @@ export class ProductsController {
     return this.productsService.getBrands();
   }
 
-  @Public()
-  @Get(':id')
-  getProductById(@Param('id', ParseIntPipe) id: number) {
-    return this.productsService.getProductById(id);
-  }
-
   @Roles(Role.ADMIN)
   @Get('admin')
   getAllProductsAdmin(@Query() paginationDto: PaginationDto) {
     return this.productsService.getAllProductsAdmin(paginationDto);
+  }
+
+  @Public()
+  @Get(':id')
+  getProductById(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.getProductById(id);
   }
 
   @Roles(Role.ADMIN)
