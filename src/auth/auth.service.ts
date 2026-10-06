@@ -4,6 +4,9 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 
+const DUMMY_HASH =
+  '$2b$10$CoiWDovz3aaHgmZdTe5v1.z3U5MAZKBeRzzHGLfUYLrY3BTf.tWre';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -15,13 +18,12 @@ export class AuthService {
     const user =
       await this.usersService.getUserByIdentification(identification);
 
-    if (!user) {
-      throw new UnauthorizedException('Credenciales Incorrectas');
-    }
+    const isPasswordValid = await bcrypt.compare(
+      pass,
+      user?.password ?? DUMMY_HASH,
+    );
 
-    const isPasswordValid = await bcrypt.compare(pass, user.password);
-
-    if (!isPasswordValid) {
+    if (!user || !isPasswordValid) {
       throw new UnauthorizedException('Credenciales Incorrectas');
     }
 
@@ -39,12 +41,10 @@ export class AuthService {
     const user = await this.usersService.createUser(createUserDto);
 
     const payload = { sub: user.id, identification: user.identification };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...safeUser } = user;
 
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: safeUser,
+      user,
     };
   }
 }

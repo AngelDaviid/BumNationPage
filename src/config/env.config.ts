@@ -19,6 +19,8 @@ export const envValidationSchema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
 
+  TRUST_PROXY: Joi.string().optional(),
+
   FRONTEND_URL: Joi.string().default('http://localhost:3001'),
 
   MAIL_HOST: Joi.string().default('smtp.gmail.com'),
