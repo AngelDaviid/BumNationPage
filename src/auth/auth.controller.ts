@@ -18,6 +18,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
   signUp(@Body() createUserDto: CreateUserDto) {
