@@ -103,13 +103,16 @@ export class UsersService {
           ...createUserDto,
           password: hashedPassword,
         },
+        omit: { password: true },
       });
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new BadRequestException(`El usuario no existe`);
+        throw new BadRequestException(
+          'No se pudo crear la cuenta con esos datos',
+        );
       }
       throw new InternalServerErrorException('Error al crear el usuario');
     }
