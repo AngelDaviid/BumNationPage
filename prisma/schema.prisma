@@ -32,6 +32,10 @@ model Product {
   orderItems    OrderItem[]
   category      Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   favorites     Favorite[]
+
+  @@index([isActive, createdAt])
+  @@index([isActive, price])
+  @@index([categoryId])
 }
 
 model User {

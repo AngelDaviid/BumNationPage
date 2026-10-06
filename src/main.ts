@@ -15,6 +15,7 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL || 'http://localhost:3001',
     methods: ['GET', 'POST', 'DELETE', 'PATCH'],
     credentials: true,
+    maxAge: 86400,
   });
 
   app.useGlobalFilters(new HttpExceptionFilter());
