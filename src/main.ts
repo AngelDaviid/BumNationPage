@@ -2,12 +2,21 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
 import helmet from 'helmet';
 import { sanitize } from 'class-sanitizer';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  const trustProxy = process.env.TRUST_PROXY;
+  if (trustProxy) {
+    app.set(
+      'trust proxy',
+      /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy,
+    );
+  }
 
   app.use(helmet());
 
