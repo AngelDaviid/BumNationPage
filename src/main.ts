@@ -6,7 +6,6 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { sanitize } from 'class-sanitizer';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
