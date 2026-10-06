@@ -20,8 +20,6 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  sanitize(app);
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
