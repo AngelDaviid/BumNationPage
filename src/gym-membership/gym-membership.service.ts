@@ -55,7 +55,7 @@ export class GymMembershipService {
           phone: true,
         },
       },
-      membershipPayment: { orderBy: { paidAt: 'desc' as const } },
+      membershipPayments: { orderBy: { paidAt: 'desc' as const } },
     };
 
     return this.prismaService.$transaction(async (tx) => {

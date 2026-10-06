@@ -1,4 +1,9 @@
-import { IsDateString, IsNotEmpty, IsObject } from 'class-validator';
+import {
+  IsDateString,
+  IsNotEmpty,
+  IsObject,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { InitialPaymentDto } from './initial-payment.dto';
 
@@ -8,6 +13,7 @@ export class CreateMembershipDto {
 
   @IsNotEmpty()
   @IsObject()
+  @ValidateNested()
   @Type(() => InitialPaymentDto)
   initialPayment!: InitialPaymentDto;
 }
