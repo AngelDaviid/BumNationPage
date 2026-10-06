@@ -18,6 +18,10 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  imageUploadOptions,
+  MAX_IMAGE_SIZE,
+} from '../common/upload/image-upload.options';
 import 'multer';
 import { Public } from '../auth/decorators/public.decorator';
 import { Role } from '@prisma/client';
@@ -61,13 +65,13 @@ export class ProductsController {
 
   @Roles(Role.ADMIN)
   @Patch(':id/image')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   async uploadProductImage(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: MAX_IMAGE_SIZE }),
           new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
         ],
       }),

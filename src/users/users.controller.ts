@@ -18,6 +18,10 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  imageUploadOptions,
+  MAX_IMAGE_SIZE,
+} from '../common/upload/image-upload.options';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RolesGuard } from '../auth/guards/roles/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
@@ -50,13 +54,13 @@ export class UsersController {
   }
 
   @Patch('me/image')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   uploadMyImage(
     @CurrentUser() user: AuthUser,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: MAX_IMAGE_SIZE }),
           new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
         ],
       }),
@@ -86,13 +90,13 @@ export class UsersController {
 
   @Roles(Role.ADMIN)
   @Patch(':id/image')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   async uploadUserImage(
     @Param('id', ParseUUIDPipe) id: string,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: MAX_IMAGE_SIZE }),
           new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
         ],
       }),
