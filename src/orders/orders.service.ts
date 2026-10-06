@@ -68,7 +68,30 @@ export class OrdersService {
     );
 
     const order = await this.prismaService.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
+      const removed = await tx.cartItem.deleteMany({
+        where: { id: { in: validItems.map((item) => item.id) } },
+      });
+
+      if (removed.count !== validItems.length) {
+        throw new BadRequestException(
+          'Tu carrito cambió mientras se procesaba el pedido, revisa e intenta de nuevo',
+        );
+      }
+
+      for (const item of validItems) {
+        const updated = await tx.product.updateMany({
+          where: { id: item.productId, stock: { gte: item.quantity } },
+          data: { stock: { decrement: item.quantity } },
+        });
+
+        if (updated.count === 0) {
+          throw new BadRequestException(
+            `No hay suficiente stock de "${item.product.name}"`,
+          );
+        }
+      }
+
+      return tx.order.create({
         data: {
           userId,
           total,
@@ -83,19 +106,6 @@ export class OrdersService {
         },
         include: { items: { include: { product: true } } },
       });
-
-      for (const item of validItems) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
-        });
-      }
-
-      await tx.cartItem.deleteMany({
-        where: { cartId: cart.id },
-      });
-
-      return newOrder;
     });
 
     void this.notifyStatusChange(order.id);
